@@ -11,6 +11,39 @@ function autobindDecorator(_: any, _2: any, descriptor: PropertyDescriptor) {
     return adjustedDescriptor;
 }
 
+// Interface for input checking objects:
+interface Validatable {
+    value: string | number;
+    required?: boolean;
+    minLength?: number;
+    maxLength?: number;
+    min?: number,
+    max?: number;
+}
+
+// Function for input checking objects:
+
+function isValid(validatableInput: Validatable) {
+    let thisIsValid = true;
+
+    if(validatableInput.required) {
+        thisIsValid = thisIsValid && validatableInput.value.toString().trim().length !== 0;
+    }
+    if(validatableInput.minLength != null && typeof validatableInput.value === 'string') {
+        thisIsValid = thisIsValid && validatableInput.value.length >= validatableInput.minLength;
+    }
+    if(validatableInput.maxLength != null && typeof validatableInput.value === 'string') {
+        thisIsValid = thisIsValid && validatableInput.value.length <= validatableInput.maxLength;
+    }
+    if(validatableInput.min != null && typeof validatableInput.value === 'number') {
+        thisIsValid = thisIsValid && validatableInput.value >= validatableInput.min;
+    }
+    if(validatableInput.max != null && typeof validatableInput.value === 'number') {
+        thisIsValid = thisIsValid && validatableInput.value <= validatableInput.max;
+    }
+    return thisIsValid;
+}    
+
 // Input Class:
 class Input {
     templateElement: HTMLTemplateElement;
@@ -46,29 +79,51 @@ class Input {
         const enteredTitle = this.titleInput.value;
         const enteredDescription = this.descriptionInput.value;
         const enteredPeople = this.peopleInput.value;
-        if(enteredTitle.trim().length === 0) {
-            alert('Title field must have an input');
-            return;
+
+        const titleObject: Validatable = {
+            value: enteredTitle,
+            required: true,
+            minLength: 2,
+            maxLength: 20
         }
-        else if(enteredDescription.trim().length === 0) {
-            alert('Description field must have an input');
-            return;
+        const descriptionObject: Validatable = {
+            value: enteredDescription,
+            required: true,
+            minLength: 5,
+            maxLength: 50
         }
-        else if(enteredPeople.trim().length === 0) {
-            alert('People field must have an input');
-            return;
+        const peopleObject: Validatable = {
+            value: +enteredPeople,
+            required: true,
+            min: 1,
+            max: 9
+        }
+        if(!isValid(titleObject) ||
+        !isValid(descriptionObject) ||
+        !isValid(peopleObject)) {
+            alert('Invalid input. Please try again.');
         } else {
             return [enteredTitle, enteredDescription, +enteredPeople]
-        }
+    }
     }
 
-    @autobindDecorator
+    private clearInputs() {
+        this.titleInput.value = '';
+        this.descriptionInput.value = '';
+        this.peopleInput.value = '';
+    }
+
+    @autobindDecorator     
     submitForm(e: Event) {
         e.preventDefault();
         const userInput = this.gatherUserInput();
         if(Array.isArray(userInput)) {
             const [title, description, people] = userInput;
             console.log(title, description, people);
+            this.clearInputs();
+        } else {
+            return;
+            // this code was added to try and fix an error and needs updating.
         }
     }
 }
