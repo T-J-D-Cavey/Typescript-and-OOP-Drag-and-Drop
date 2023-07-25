@@ -1,3 +1,36 @@
+// Project State Management:
+
+class ProjectState {
+    private projects: any[] = [];
+    private static instance: ProjectState;
+
+    private constructor() {
+
+    }
+
+    static getInstance() {
+        if (this.instance) {
+            return this.instance;
+        } else {
+            this.instance = new ProjectState();
+            return this.instance;
+        }
+    }
+
+    addProject(title: string, description: string, numOfPeople: number) {
+        const newProject = {
+            id: Math.random().toString(),
+            title: title,
+            description: description,
+            people: numOfPeople
+        };
+        this.projects.push(newProject)
+    }
+}
+
+// Project State Instance:
+const projectState = ProjectState.getInstance();
+ 
 // Decorator for autobind:
 function autobindDecorator(_: any, _2: any, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
@@ -59,7 +92,7 @@ class Input {
         const importedNode = document.importNode(this.templateElement.content, true);
         this.element = importedNode.firstElementChild as HTMLFormElement;
         this.element.id = 'user-input'
-        this.render();
+        this.attach();
         this.titleInput = this.element.querySelector('#title')! as HTMLInputElement;
         this.descriptionInput = this.element.querySelector('#description')! as HTMLInputElement;
         this.peopleInput = this.element.querySelector('#people')! as HTMLInputElement;
@@ -67,7 +100,7 @@ class Input {
 
     }
 
-    private render() {
+    private attach() {
         this.hostElement.insertAdjacentElement('afterbegin', this.element);
     }
 
@@ -98,10 +131,13 @@ class Input {
             min: 1,
             max: 9
         }
-        if(!isValid(titleObject) ||
-        !isValid(descriptionObject) ||
-        !isValid(peopleObject)) {
-            alert('Invalid input. Please try again.');
+        if(
+            !isValid(titleObject) ||
+            !isValid(descriptionObject) ||
+            !isValid(peopleObject)
+        ) {
+            alert('Invalid input. Please try again.')
+            return undefined;
         } else {
             return [enteredTitle, enteredDescription, +enteredPeople]
     }
@@ -119,20 +155,47 @@ class Input {
         const userInput = this.gatherUserInput();
         if(Array.isArray(userInput)) {
             const [title, description, people] = userInput;
-            console.log(title, description, people);
             this.clearInputs();
+            projectState.addProject(title, description, people)
         } else {
             return;
-            // this code was added to try and fix an error and needs updating.
         }
     }
 }
 
+// Project List Class:
+class ProjectList {
+    templateElement: HTMLTemplateElement;
+    hostElement: HTMLElement;
+    element: HTMLElement;
 
-const test = new Input;
+    constructor(private type: 'active' | 'finished') {
+        this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
+        this.hostElement = document.getElementById('app')! as HTMLElement;
+        const importedNode = document.importNode(this.templateElement.content, true);
+        this.element = importedNode.firstElementChild as HTMLElement;
+        this.element.id = `${this.type}-projects`;
+        this.attach();
+        this.renderContent();
+    }
 
+    private attach() {
+        this.hostElement.insertAdjacentElement('beforeend', this.element);
+    }
 
+    private renderContent() {
+        const listId = `${this.type}-projects-list`;
+        this.element.querySelector('ul')!.id = listId;
+        this.element.querySelector('h2')!.textContent = this.type.toUpperCase() + ' PROJECTS';
+    }
 
+}
+// Input instance
+const inputInstance = new Input;
+// Project list instance 1
+const activeProjectListInstance = new ProjectList('active');
+// Project list instance 2
+const finishedProjectListInstance = new ProjectList('finished');
 
 
 

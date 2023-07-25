@@ -1,10 +1,36 @@
 "use strict";
+// Project State Management:
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+class ProjectState {
+    constructor() {
+        this.projects = [];
+    }
+    static getInstance() {
+        if (this.instance) {
+            return this.instance;
+        }
+        else {
+            this.instance = new ProjectState();
+            return this.instance;
+        }
+    }
+    addProject(title, description, numOfPeople) {
+        const newProject = {
+            id: Math.random().toString(),
+            title: title,
+            description: description,
+            people: numOfPeople
+        };
+        this.projects.push(newProject);
+    }
+}
+// Project State Instance:
+const projectState = ProjectState.getInstance();
 // Decorator for autobind:
 function autobindDecorator(_, _2, descriptor) {
     const originalMethod = descriptor.value;
@@ -45,13 +71,13 @@ class Input {
         const importedNode = document.importNode(this.templateElement.content, true);
         this.element = importedNode.firstElementChild;
         this.element.id = 'user-input';
-        this.render();
+        this.attach();
         this.titleInput = this.element.querySelector('#title');
         this.descriptionInput = this.element.querySelector('#description');
         this.peopleInput = this.element.querySelector('#people');
         this.listen();
     }
-    render() {
+    attach() {
         this.hostElement.insertAdjacentElement('afterbegin', this.element);
     }
     listen() {
@@ -83,6 +109,7 @@ class Input {
             !isValid(descriptionObject) ||
             !isValid(peopleObject)) {
             alert('Invalid input. Please try again.');
+            return undefined;
         }
         else {
             return [enteredTitle, enteredDescription, +enteredPeople];
@@ -98,16 +125,41 @@ class Input {
         const userInput = this.gatherUserInput();
         if (Array.isArray(userInput)) {
             const [title, description, people] = userInput;
-            console.log(title, description, people);
             this.clearInputs();
+            projectState.addProject(title, description, people);
         }
         else {
             return;
-            // this code was added to try and fix an error and needs updating.
         }
     }
 }
 __decorate([
     autobindDecorator
 ], Input.prototype, "submitForm", null);
-const test = new Input;
+// Project List Class:
+class ProjectList {
+    constructor(type) {
+        this.type = type;
+        this.templateElement = document.getElementById('project-list');
+        this.hostElement = document.getElementById('app');
+        const importedNode = document.importNode(this.templateElement.content, true);
+        this.element = importedNode.firstElementChild;
+        this.element.id = `${this.type}-projects`;
+        this.attach();
+        this.renderContent();
+    }
+    attach() {
+        this.hostElement.insertAdjacentElement('beforeend', this.element);
+    }
+    renderContent() {
+        const listId = `${this.type}-projects-list`;
+        this.element.querySelector('ul').id = listId;
+        this.element.querySelector('h2').textContent = this.type.toUpperCase() + ' PROJECTS';
+    }
+}
+// Input instance
+const inputInstance = new Input;
+// Project list instance 1
+const activeProjectListInstance = new ProjectList('active');
+// Project list instance 2
+const finishedProjectListInstance = new ProjectList('finished');
