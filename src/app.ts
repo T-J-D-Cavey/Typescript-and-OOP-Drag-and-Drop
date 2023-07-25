@@ -42,16 +42,40 @@ class Input {
         this.element.addEventListener('submit', this.submitForm)
     }
 
+    private gatherUserInput(): [string, string, number] | void {
+        const enteredTitle = this.titleInput.value;
+        const enteredDescription = this.descriptionInput.value;
+        const enteredPeople = this.peopleInput.value;
+        if(enteredTitle.trim().length === 0) {
+            alert('Title field must have an input');
+            return;
+        }
+        else if(enteredDescription.trim().length === 0) {
+            alert('Description field must have an input');
+            return;
+        }
+        else if(enteredPeople.trim().length === 0) {
+            alert('People field must have an input');
+            return;
+        } else {
+            return [enteredTitle, enteredDescription, +enteredPeople]
+        }
+    }
+
     @autobindDecorator
     submitForm(e: Event) {
         e.preventDefault();
-        const title: any = this.titleInput.value;
-        console.log(this.titleInput.value);
+        const userInput = this.gatherUserInput();
+        if(Array.isArray(userInput)) {
+            const [title, description, people] = userInput;
+            console.log(title, description, people);
+        }
     }
 }
 
 
 const test = new Input;
+
 
 
 

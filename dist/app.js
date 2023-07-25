@@ -37,10 +37,33 @@ class Input {
     listen() {
         this.element.addEventListener('submit', this.submitForm);
     }
+    gatherUserInput() {
+        const enteredTitle = this.titleInput.value;
+        const enteredDescription = this.descriptionInput.value;
+        const enteredPeople = this.peopleInput.value;
+        if (enteredTitle.trim().length === 0) {
+            alert('Title field must have an input');
+            return;
+        }
+        else if (enteredDescription.trim().length === 0) {
+            alert('Description field must have an input');
+            return;
+        }
+        else if (enteredPeople.trim().length === 0) {
+            alert('People field must have an input');
+            return;
+        }
+        else {
+            return [enteredTitle, enteredDescription, +enteredPeople];
+        }
+    }
     submitForm(e) {
         e.preventDefault();
-        const title = this.titleInput.value;
-        console.log(this.titleInput.value);
+        const userInput = this.gatherUserInput();
+        if (Array.isArray(userInput)) {
+            const [title, description, people] = userInput;
+            console.log(title, description, people);
+        }
     }
 }
 __decorate([
