@@ -79,23 +79,33 @@ function isValid(validatableInput) {
     }
     return thisIsValid;
 }
-// Input Class:
-class Input {
-    constructor() {
-        this.templateElement = document.getElementById('project-input');
-        this.hostElement = document.getElementById('app');
+// Component Base Class:
+class Component {
+    constructor(templateId, hostElementId, insertAtStart, newElementId) {
+        this.templateElement = document.getElementById(templateId);
+        this.hostElement = document.getElementById(hostElementId);
         const importedNode = document.importNode(this.templateElement.content, true);
         this.element = importedNode.firstElementChild;
-        this.element.id = 'user-input';
-        this.attach();
+        if (newElementId) {
+            this.element.id = newElementId;
+        }
+        this.attach(insertAtStart);
+    }
+    attach(insertAtStart) {
+        this.hostElement.insertAdjacentElement(insertAtStart === true ? 'afterbegin' : 'beforeend', this.element);
+    }
+}
+// Input Class:
+class Input extends Component {
+    constructor() {
+        super('project-input', 'app', true, 'user-input');
         this.titleInput = this.element.querySelector('#title');
         this.descriptionInput = this.element.querySelector('#description');
         this.peopleInput = this.element.querySelector('#people');
         this.listen();
     }
-    attach() {
-        this.hostElement.insertAdjacentElement('afterbegin', this.element);
-    }
+    renderContent() { }
+    configure() { }
     listen() {
         this.element.addEventListener('submit', this.submitForm);
     }
@@ -153,30 +163,13 @@ __decorate([
     autobindDecorator
 ], Input.prototype, "submitForm", null);
 // Project List Class:
-class ProjectList {
+class ProjectList extends Component {
     constructor(type) {
+        super('project-list', 'app', false, `${type}-projects`);
         this.type = type;
-        this.templateElement = document.getElementById('project-list');
-        this.hostElement = document.getElementById('app');
         this.assignedProjects = [];
-        const importedNode = document.importNode(this.templateElement.content, true);
-        this.element = importedNode.firstElementChild;
-        this.element.id = `${this.type}-projects`;
-        projectState.addListener((projects) => {
-            const relevantProjects = projects.filter(prj => {
-                if (this.type === 'active') {
-                    return prj.status === ProjectStatus.Active;
-                }
-                return prj.status === ProjectStatus.Finished;
-            });
-            this.assignedProjects = relevantProjects;
-            this.renderProjects();
-        });
-        this.attach();
+        this.configure();
         this.renderContent();
-    }
-    attach() {
-        this.hostElement.insertAdjacentElement('beforeend', this.element);
     }
     renderContent() {
         const listId = `${this.type}-projects-list`;
@@ -191,6 +184,18 @@ class ProjectList {
             listItem.textContent = projectItem.title;
             listEl.appendChild(listItem);
         }
+    }
+    configure() {
+        projectState.addListener((projects) => {
+            const relevantProjects = projects.filter(prj => {
+                if (this.type === 'active') {
+                    return prj.status === ProjectStatus.Active;
+                }
+                return prj.status === ProjectStatus.Finished;
+            });
+            this.assignedProjects = relevantProjects;
+            this.renderProjects();
+        });
     }
 }
 // Input instance
