@@ -2,10 +2,11 @@
 
 class ProjectState {
     private projects: any[] = [];
+    private listeners: any[] = [];
     private static instance: ProjectState;
 
     private constructor() {
-
+        
     }
 
     static getInstance() {
@@ -24,7 +25,14 @@ class ProjectState {
             description: description,
             people: numOfPeople
         };
-        this.projects.push(newProject)
+        this.projects.push(newProject);
+        for(const fn of this.listeners) {
+            fn(this.projects.slice());
+        }
+    }
+
+    addListener(fn: Function) {
+        this.listeners.push(fn);
     }
 }
 
@@ -156,7 +164,7 @@ class Input {
         if(Array.isArray(userInput)) {
             const [title, description, people] = userInput;
             this.clearInputs();
-            projectState.addProject(title, description, people)
+            projectState.addProject(title, description, people);
         } else {
             return;
         }
@@ -168,6 +176,8 @@ class ProjectList {
     templateElement: HTMLTemplateElement;
     hostElement: HTMLElement;
     element: HTMLElement;
+    list: HTMLUListElement;
+    assignedProjects: any[];
 
     constructor(private type: 'active' | 'finished') {
         this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
@@ -175,6 +185,10 @@ class ProjectList {
         const importedNode = document.importNode(this.templateElement.content, true);
         this.element = importedNode.firstElementChild as HTMLElement;
         this.element.id = `${this.type}-projects`;
+        projectState.addListener((projects: any[]) => {
+            this.assignedProjects = projects;
+            this.renderProjects(this.assignedProjects);
+        });
         this.attach();
         this.renderContent();
     }
@@ -187,6 +201,14 @@ class ProjectList {
         const listId = `${this.type}-projects-list`;
         this.element.querySelector('ul')!.id = listId;
         this.element.querySelector('h2')!.textContent = this.type.toUpperCase() + ' PROJECTS';
+    }
+
+    renderProjects(projectList: any[]) {
+        this.list = this.element.querySelector('ul')! as HTMLUListElement;
+        projectList.forEach(projectObj => {
+            this.list.insertAdjacentElement('beforeend', projectObj.title);
+        })
+        
     }
 
 }
