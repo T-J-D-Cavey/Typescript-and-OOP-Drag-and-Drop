@@ -13,17 +13,26 @@ class Project {
         ) {
     }
 }
+// Listener Function Type: 
+type Listener<T> = (items: T[]) => void;
 
-// Project State Management:
-type Listener = (items: Project[]) => void;
+// State class:
+class State<T> {
+    protected listeners: Listener<T>[] = [];
 
-class ProjectState {
+    addListener(fn: Listener<T>) {
+        this.listeners.push(fn);
+    }
+}
+
+
+// Project State Class:
+class ProjectState extends State<Project> {
     private projects: Project[] = [];
-    private listeners: Listener[] = [];
     private static instance: ProjectState;
 
     private constructor() {
-        
+        super()
     }
 
     static getInstance() {
@@ -46,10 +55,6 @@ class ProjectState {
         for(const fn of this.listeners) {
             fn(this.projects.slice());
         }
-    }
-
-    addListener(fn: Listener) {
-        this.listeners.push(fn);
     }
 }
 
@@ -102,7 +107,6 @@ function isValid(validatableInput: Validatable) {
 }    
 
 // Component Base Class:
-
 abstract class Component<T extends HTMLElement, U extends HTMLElement> {
     templateElement: HTMLTemplateElement;
     hostElement: T;
@@ -127,9 +131,67 @@ abstract class Component<T extends HTMLElement, U extends HTMLElement> {
     private attach(insertAtStart: boolean) {
         this.hostElement.insertAdjacentElement(insertAtStart === true ? 'afterbegin' : 'beforeend', this.element);
     }
-    // abstract configure(): void (I need to find which method is referred to here)
     abstract renderContent(): void;
     abstract configure(): void;
+}
+
+// Project Item Class:
+class ProjectItem extends Component<HTMLUListElement, HTMLLIElement>{
+    private project: Project;
+    constructor(hostId: string, project: Project) {
+        super('single-project', hostId, false, project.id);
+        this.project = project;
+        this.configure();
+        this.renderContent();
+    }
+
+    configure() {}
+    renderContent() {
+        this.element.querySelector('h2')!.textContent = this.project.title;
+        this.element.querySelector('h3')!.textContent = this.project.people.toString();
+        this.element.querySelector('p')!.textContent = this.project.description;
+    }
+
+
+}
+
+// Project List Class:
+class ProjectList extends Component<HTMLElement, HTMLElement> {
+    assignedProjects: any[];
+
+    constructor(private type: 'active' | 'finished') {
+        super('project-list', 'app', false, `${type}-projects`)
+        this.assignedProjects = [];
+        this.configure();
+        this.renderContent();
+    }
+
+    renderContent() {
+        const listId = `${this.type}-projects-list`;
+        this.element.querySelector('ul')!.id = listId;
+        this.element.querySelector('h2')!.textContent = this.type.toUpperCase() + ' PROJECTS';
+    }
+
+    renderProjects() {
+        const listEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
+        listEl.innerHTML = '';
+        for(const prjItem of this.assignedProjects) {
+            new ProjectItem(this.element.querySelector('ul')!.id, prjItem);
+        }
+    }
+
+    configure() {
+        projectState.addListener((projects: Project[]) => {
+            const relevantProjects = projects.filter(prj => {
+                if(this.type === 'active') {
+                    return prj.status === ProjectStatus.Active;
+                }
+                return prj.status === ProjectStatus.Finished;
+            })
+            this.assignedProjects = relevantProjects;
+            this.renderProjects();
+        });
+    }
 }
 
 // Input Class:
@@ -143,14 +205,13 @@ class Input extends Component<HTMLElement, HTMLFormElement> {
         this.titleInput = this.element.querySelector('#title')! as HTMLInputElement;
         this.descriptionInput = this.element.querySelector('#description')! as HTMLInputElement;
         this.peopleInput = this.element.querySelector('#people')! as HTMLInputElement;
-        this.listen();
+        this.configure()
 
     }
 
     renderContent() {}
-    configure() {}
 
-    private listen() {
+    configure() {
         this.element.addEventListener('submit', this.submitForm)
     }
 
@@ -158,7 +219,7 @@ class Input extends Component<HTMLElement, HTMLFormElement> {
         const enteredTitle = this.titleInput.value;
         const enteredDescription = this.descriptionInput.value;
         const enteredPeople = this.peopleInput.value;
-
+ 
         const titleObject: Validatable = {
             value: enteredTitle,
             required: true,
@@ -196,7 +257,7 @@ class Input extends Component<HTMLElement, HTMLFormElement> {
     }
 
     @autobindDecorator     
-    submitForm(e: Event) {
+    private submitForm(e: Event) {
         e.preventDefault();
         const userInput = this.gatherUserInput();
         if(Array.isArray(userInput)) {
@@ -209,47 +270,7 @@ class Input extends Component<HTMLElement, HTMLFormElement> {
     }
 }
 
-// Project List Class:
-class ProjectList extends Component<HTMLElement, HTMLElement> {
-    assignedProjects: any[];
 
-    constructor(private type: 'active' | 'finished') {
-        super('project-list', 'app', false, `${type}-projects`)
-        this.assignedProjects = [];
-        this.configure();
-        this.renderContent();
-    }
-
-    renderContent() {
-        const listId = `${this.type}-projects-list`;
-        this.element.querySelector('ul')!.id = listId;
-        this.element.querySelector('h2')!.textContent = this.type.toUpperCase() + ' PROJECTS';
-    }
-
-    renderProjects() {
-        const listEl = document.getElementById(`${this.type}-projects-list`)! as HTMLUListElement;
-        listEl.innerHTML = '';
-        for(const projectItem of this.assignedProjects) {
-            const listItem = document.createElement('li');
-            listItem.textContent = projectItem.title;
-            listEl.appendChild(listItem);
-        }
-    }
-
-    configure() {
-        projectState.addListener((projects: Project[]) => {
-            const relevantProjects = projects.filter(prj => {
-                if(this.type === 'active') {
-                    return prj.status === ProjectStatus.Active;
-                }
-                return prj.status === ProjectStatus.Finished;
-            })
-            this.assignedProjects = relevantProjects;
-            this.renderProjects();
-        });
-    }
-
-}
 // Input instance
 const inputInstance = new Input;
 // Project list instance 1
