@@ -55,7 +55,7 @@ class ProjectState extends State {
 // Project State Instance:
 const projectState = ProjectState.getInstance();
 // Decorator for autobind:
-function autobindDecorator(_, _2, descriptor) {
+function autobind(_, _2, descriptor) {
     const originalMethod = descriptor.value;
     const adjustedDescriptor = {
         configurable: true,
@@ -104,19 +104,39 @@ class Component {
 }
 // Project Item Class:
 class ProjectItem extends Component {
+    get persons() {
+        if (this.project.people === 1) {
+            return `${this.project.people} person assigned.`;
+        }
+        return `${this.project.people} people assigned.`;
+    }
     constructor(hostId, project) {
         super('single-project', hostId, false, project.id);
         this.project = project;
         this.configure();
         this.renderContent();
     }
-    configure() { }
+    dragStartHandler(event) {
+        event.dataTransfer.setData('text/plain', this.project.id);
+        event.dataTransfer.effectAllowed = 'move';
+    }
+    dragEndHandler(_) {
+        console.log('DragEnd');
+    }
+    configure() {
+        console.log(this.element);
+        this.element.addEventListener('dragstart', this.dragStartHandler);
+        this.element.addEventListener('dragend', this.dragEndHandler);
+    }
     renderContent() {
         this.element.querySelector('h2').textContent = this.project.title;
-        this.element.querySelector('h3').textContent = this.project.people.toString();
+        this.element.querySelector('h3').textContent = this.persons;
         this.element.querySelector('p').textContent = this.project.description;
     }
 }
+__decorate([
+    autobind
+], ProjectItem.prototype, "dragStartHandler", null);
 // Project List Class:
 class ProjectList extends Component {
     constructor(type) {
@@ -125,6 +145,19 @@ class ProjectList extends Component {
         this.assignedProjects = [];
         this.configure();
         this.renderContent();
+    }
+    dragOverHandler(event) {
+        if (event.dataTransfer && event.dataTransfer.types[0] === 'text/plain') {
+            event.preventDefault();
+            const listEl = this.element.querySelector('ul');
+            listEl.classList.add('droppable');
+        }
+    }
+    dropHandler(_) {
+    }
+    dragLeaveHandler(_) {
+        const listEl = this.element.querySelector('ul');
+        listEl.classList.remove('droppable');
     }
     renderContent() {
         const listId = `${this.type}-projects-list`;
@@ -139,6 +172,9 @@ class ProjectList extends Component {
         }
     }
     configure() {
+        this.element.addEventListener('dragover', this.dragOverHandler);
+        this.element.addEventListener('dragleave', this.dragLeaveHandler);
+        this.element.addEventListener('drop', this.dragOverHandler);
         projectState.addListener((projects) => {
             const relevantProjects = projects.filter(prj => {
                 if (this.type === 'active') {
@@ -151,6 +187,12 @@ class ProjectList extends Component {
         });
     }
 }
+__decorate([
+    autobind
+], ProjectList.prototype, "dragOverHandler", null);
+__decorate([
+    autobind
+], ProjectList.prototype, "dragLeaveHandler", null);
 // Input Class:
 class Input extends Component {
     constructor() {
@@ -215,7 +257,7 @@ class Input extends Component {
     }
 }
 __decorate([
-    autobindDecorator
+    autobind
 ], Input.prototype, "submitForm", null);
 // Input instance
 const inputInstance = new Input;
