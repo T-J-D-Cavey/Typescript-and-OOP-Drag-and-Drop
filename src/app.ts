@@ -68,6 +68,20 @@ class ProjectState extends State<Project> {
             fn(this.projects.slice());
         }
     }
+
+    moveProject(projectId: string, newStatus: ProjectStatus) {
+       const project = this.projects.find(prj => prj.id === projectId);
+       if(project && project.status !== newStatus) {
+        project.status = newStatus;
+        this.updateListeners();
+       }
+    }
+
+    private updateListeners() {
+        for (const listenerFn of this.listeners) {
+            listenerFn(this.projects.slice());
+        }
+    }
 }
 
 // Project State Instance:
@@ -172,11 +186,9 @@ class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> implements 
     }
 
     dragEndHandler(_: DragEvent) {
-        console.log('DragEnd');
     }
 
     configure() {
-        console.log(this.element);
         this.element.addEventListener('dragstart', this.dragStartHandler);
         this.element.addEventListener('dragend', this.dragEndHandler);
     }
@@ -210,8 +222,10 @@ class ProjectList extends Component<HTMLElement, HTMLElement> implements DragTar
         }
     }
 
-    dropHandler(_: DragEvent) {
-        
+    @autobind
+    dropHandler(event: DragEvent) {
+        const prjId = (event.dataTransfer!.getData('text/plain'));
+        projectState.moveProject(prjId, this.type === 'active' ? ProjectStatus.Active : ProjectStatus.Finished)
     }
     @autobind
     dragLeaveHandler(_: DragEvent) {
@@ -236,7 +250,7 @@ class ProjectList extends Component<HTMLElement, HTMLElement> implements DragTar
     configure() {
         this.element.addEventListener('dragover', this.dragOverHandler);
         this.element.addEventListener('dragleave', this.dragLeaveHandler);
-        this.element.addEventListener('drop', this.dragOverHandler);
+        this.element.addEventListener('drop', this.dropHandler);
         projectState.addListener((projects: Project[]) => {
             const relevantProjects = projects.filter(prj => {
                 if(this.type === 'active') {
